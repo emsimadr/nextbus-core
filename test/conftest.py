@@ -65,7 +65,6 @@ def config_file(fake_mbta_server, tmp_path):
     """
     mbta_url = f"http://{fake_mbta_server.host}:{fake_mbta_server.port}"
     config_content = f"""\
-mbta_api_key: "test-key"
 mbta_base_url: "{mbta_url}"
 cache_ttl: 20
 stale_max_age: 300
@@ -93,6 +92,7 @@ def bus_tracker_url(config_file):
     # Import here to avoid import errors if src is not yet built.
     # This fixture will be usable once the app module exists.
     os.environ["CONFIG_PATH"] = config_file
+    os.environ["MBTA_API_KEY"] = "test-key"
     os.environ["PORT"] = "0"  # Let uvicorn pick a random port
 
     try:

@@ -14,14 +14,17 @@ Wraps the MBTA v3 API with caching, fallback logic, and walk-time awareness.
 ## Quick start
 
 ```bash
-# 1. Copy and edit the config
+# 1. Copy and edit the config (stops, labels, walk times)
 cp config.example.yaml config.yaml
-# Edit config.yaml with your stops and MBTA API key
 
-# 2. Run
+# 2. Copy and edit secrets (API keys)
+cp .env.example .env
+# Edit .env with your MBTA API key
+
+# 3. Run
 docker compose up -d
 
-# 3. Check
+# 4. Check
 curl http://localhost:8080/v1/board
 ```
 
@@ -37,10 +40,10 @@ See `spec/Service-API.md` for the full contract.
 
 ## Configuration
 
-Edit `config.yaml` to set your MBTA API key and bus stops.
-See `config.example.yaml` for the full template with comments.
+- **`config.yaml`** -- your bus stops, labels, walk times, cache settings (safe to share)
+- **`.env`** -- your API keys and secrets (never share or commit)
 
-Environment variables (`MBTA_API_KEY`, `API_KEY`, `PORT`, `LOG_LEVEL`) override config file values.
+See `config.example.yaml` and `.env.example` for templates with comments.
 
 ## Development
 

@@ -57,7 +57,7 @@ template:
 
 ## Optional: API key authentication
 
-If `api_key` is set in the bus-tracker config:
+If `API_KEY` is set in the bus-tracker `.env` file:
 
 ```yaml
 sensor:

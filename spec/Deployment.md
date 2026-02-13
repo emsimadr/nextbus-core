@@ -11,33 +11,41 @@ Primary: `docker compose up -d` on any machine (Raspberry Pi, NAS, old laptop, e
 
 The Docker image is published to GitHub Container Registry. Setup for a new user:
 
-1. Clone the repo (or just copy `docker-compose.yml` and `config.example.yaml`).
+1. Clone the repo (or just copy `docker-compose.yml`, `config.example.yaml`, and `.env.example`).
 2. Copy `config.example.yaml` to `config.yaml` and edit with your stops.
-3. Run `docker compose up -d`.
+3. Copy `.env.example` to `.env` and add your API keys.
+4. Run `docker compose up -d`.
 
 ## Configuration
 
-### config.yaml (primary)
+Secrets and non-secret config are separated by design.
+
+### config.yaml (non-sensitive settings)
 
 Mounted into the container at `/app/config.yaml`. See `config.example.yaml` for the full template.
+Safe to share, paste in issues, or commit to a fork -- no secrets live here.
 
-Key fields:
+Fields:
 
-- `mbta_api_key`: MBTA v3 API key (strongly recommended; unauthenticated = 20 req/min limit)
 - `cache_ttl`: seconds between MBTA refreshes (default 20)
 - `stale_max_age`: seconds to serve stale data when MBTA is down (default 300)
-- `api_key`: optional; if set, all `/v1/*` requests require `X-API-Key` header
 - `stops`: list of BoardItemConfig objects (key, label, route_id, stop_id, direction_id, walk_minutes)
 
-### Environment variables (overrides)
+### .env (secrets and environment overrides)
 
-Useful for Docker secrets or quick tweaks without editing the config file.
+Loaded by docker-compose via `env_file`. Gitignored -- never committed.
 
-- `MBTA_API_KEY` -- overrides `mbta_api_key` in config
-- `API_KEY` -- overrides `api_key` in config
+- `MBTA_API_KEY` -- MBTA v3 API key (strongly recommended; unauthenticated = 20 req/min limit)
+- `API_KEY` -- optional; if set, all `/v1/*` requests require `X-API-Key` header
 - `PORT` -- HTTP listen port (default `8080`)
 - `LOG_LEVEL` -- logging level (default `info`)
 - `CONFIG_PATH` -- path to config file (default `/app/config.yaml`)
+
+### Why secrets are not in config.yaml
+
+API keys must only live in `.env` (or environment variables). This prevents accidental exposure
+when sharing config files for debugging or in community discussions. The config file is safe to
+share; the `.env` file is not.
 
 ## Health check
 
