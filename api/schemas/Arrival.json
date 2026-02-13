@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "ArrivalSource": {
+      "enum": [
+        "realtime",
+        "schedule"
+      ],
+      "title": "ArrivalSource",
+      "type": "string"
+    }
+  },
+  "description": "A single upcoming bus arrival.",
+  "properties": {
+    "time": {
+      "description": "When the bus arrives at the stop (ISO 8601)",
+      "format": "date-time",
+      "title": "Time",
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Minutes until bus arrives at stop",
+      "minimum": 0,
+      "title": "Minutes",
+      "type": "integer"
+    },
+    "leave_in_minutes": {
+      "description": "Minutes until you must leave the house (minutes - walk_minutes); can be negative",
+      "title": "Leave In Minutes",
+      "type": "integer"
+    },
+    "source": {
+      "$ref": "#/$defs/ArrivalSource",
+      "description": "Whether this is realtime or schedule data"
+    },
+    "trip_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "MBTA trip ID for debugging",
+      "title": "Trip Id"
+    }
+  },
+  "required": [
+    "time",
+    "minutes",
+    "leave_in_minutes",
+    "source"
+  ],
+  "title": "Arrival",
+  "type": "object"
+}

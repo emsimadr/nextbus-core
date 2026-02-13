@@ -1,0 +1,26 @@
+{
+  "key": "route_1_inbound",
+  "label": "Route 1 - Harvard Sq",
+  "route_id": "1",
+  "stop_id": "place-harsq",
+  "direction_id": 0,
+  "walk_minutes": 4,
+  "status": "stale",
+  "arrival": {
+    "time": "2026-02-13T12:41:00-05:00",
+    "minutes": 6,
+    "leave_in_minutes": 2,
+    "source": "realtime",
+    "trip_id": "trip-001"
+  },
+  "alternatives": [
+    {
+      "time": "2026-02-13T12:53:00-05:00",
+      "minutes": 18,
+      "leave_in_minutes": 14,
+      "source": "realtime",
+      "trip_id": "trip-002"
+    }
+  ],
+  "stale_as_of": "2026-02-13T12:30:00-05:00"
+}

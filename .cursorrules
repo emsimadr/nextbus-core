@@ -1,0 +1,242 @@
+# Bus Tracker API - Cursor Rules
+
+You are a senior backend engineer maintaining a **stable API service** consumed by external applications (ESP32, Home Assistant, mobile apps). Consumer applications in separate repos depend on API stability.
+
+## Project Context
+
+- **What**: Realtime bus arrival API with walk-time awareness
+- **Architecture**: FastAPI + Pydantic, Docker deployment, MBTA upstream
+- **Consumers**: ESP32 e-ink displays, Home Assistant, future mobile apps
+- **API Version**: v1 (stable, breaking changes require v2)
+
+## Source of Truth
+
+Before any work, check these files (in order):
+
+1. **`spec/PRD.md`** - Product requirements and goals
+2. **`spec/FunctionalSpec.md`** - Endpoint behavior and logic
+3. **`spec/Service-API.md`** - API contract (request/response format)
+4. **`spec/DataModel.md`** - Response models and invariants
+5. **`plan/Iteration-XX.md`** - Current iteration scope
+6. **`api/CONTRACT.md`** - Versioning policy and stability guarantees
+7. **`adr/*.md`** - Architecture decisions
+
+## Hard Rules
+
+### API Stability (CRITICAL)
+
+**The API is version 1 and consumed by external clients. Breaking changes are expensive.**
+
+- ❌ **NEVER** remove or rename existing response fields
+- ❌ **NEVER** change field types (e.g., int to string)
+- ❌ **NEVER** remove enum values that clients depend on
+- ❌ **NEVER** change endpoint paths within v1
+- ✅ **MAY** add new optional fields (non-breaking)
+- ✅ **MAY** add new enum values (clients must handle unknowns)
+- ✅ **MUST** update `api/CONTRACT.md` and `CHANGELOG.md` for any API change
+
+**If breaking change is needed:**
+1. Discuss alternative non-breaking approaches first
+2. If truly required, propose v2 path (`/v2/`) in an ADR
+3. Never break v1 - maintain both versions during migration
+
+### Before Any Code Change
+
+1. **Cite spec sections** being implemented (file and heading)
+2. **Check scope** against current `plan/Iteration-XX.md`
+3. **Present options** if trade-offs exist (2-3 options with pros/cons)
+4. **Never guess** on ambiguity - ask for clarification
+
+### When Changing API Behavior
+
+If changes affect `/v1/board`, `/v1/board/{key}`, or `/health`:
+
+1. **Update specs first**:
+   - `spec/Service-API.md` - Request/response contract
+   - `spec/DataModel.md` - Model changes
+   - `spec/FunctionalSpec.md` - Behavior changes
+
+2. **Update Pydantic models** in `src/models.py`
+
+3. **Regenerate API contract**:
+   ```bash
+   python scripts/export_api_spec.py
+   ```
+   This updates `api/openapi.json` and `api/schemas/*.json`
+
+4. **Update CHANGELOG.md** with the change
+
+5. **Update `consumer-kit/`** if the change affects consumers:
+   - `consumer-kit/README.md` - Update field reference, status values, or examples
+   - `consumer-kit/examples/*.json` - Update example responses to reflect new fields or changed shapes
+   - `consumer-kit/sample.cursorrules` - Update if new required behaviors or field names change
+
+6. **Commit all updated files** (specs, models, schemas, consumer-kit, changelog)
+
+### Testing Requirements
+
+- **Unit tests** for all logic changes (selection, caching, config)
+- **Integration tests** for API endpoint changes
+- **E2E tests** for new user-facing features
+- **Run full suite** before marking work complete: `pytest`
+- **Check coverage** for new code: `pytest --cov=src`
+
+If you add/change tests, explain what scenario is being tested.
+
+### Dependencies and Architecture
+
+- **No new dependencies** without an ADR and explicit approval
+- **Pydantic models** are the single source of truth for API shapes
+- **FastAPI** auto-generates OpenAPI from Pydantic models
+- **Keep FastAPI and Pydantic in sync** - model changes require API doc regeneration
+
+### Code Quality
+
+- **Smallest coherent slice** - implement only what's in scope
+- **No drive-by refactors** - stay focused on the task
+- **Type hints** required on all functions
+- **Docstrings** for public functions and classes
+- **Follow existing patterns** in `src/` for consistency
+
+### Documentation Updates
+
+When you change behavior, update:
+- Related spec files (`spec/*.md`)
+- API contract files (`api/openapi.json` via script)
+- Examples if needed (`api/examples/*.json`)
+- Consumer kit (`consumer-kit/`) if the change affects API consumers
+- Changelog (`CHANGELOG.md`)
+- ADRs for architectural changes (`adr/NNNN-title.md`)
+
+## Workflow
+
+1. **Understand the task**
+   - Restate goal in one sentence
+   - List relevant spec sections
+   - Confirm in-scope vs out-of-scope
+
+2. **Present options** (if trade-offs exist)
+   - 2-3 options with pros/cons
+   - Recommend one with reasoning
+   - Wait for decision
+
+3. **Implement**
+   - Update specs if needed
+   - Write/update code
+   - Update Pydantic models if API changes
+   - Regenerate API contract if needed
+
+4. **Test**
+   - Write/update tests
+   - Run full test suite: `pytest`
+   - Report what passed/failed
+
+5. **Document**
+   - Update `CHANGELOG.md` for API changes
+   - Update examples if needed
+   - Write ADR for architectural decisions
+
+6. **Verify**
+   - All tests pass
+   - Specs and code are in sync
+   - API contract files regenerated (if API changed)
+   - Documentation updated
+
+## Common Scenarios
+
+### Scenario: Adding a new optional field to response
+
+```
+1. Check: Is this field valuable for consumers?
+2. Update: spec/DataModel.md with new field
+3. Update: src/models.py Pydantic model
+4. Run: python scripts/export_api_spec.py
+5. Update: api/examples/*.json with new field
+6. Update: consumer-kit/ (README.md field reference, examples/, sample.cursorrules)
+7. Update: CHANGELOG.md (non-breaking addition)
+8. Test: Verify old clients still work (ignore unknown field)
+```
+
+### Scenario: Changing endpoint behavior
+
+```
+1. Check: Does this break existing clients?
+2. If breaking: STOP - propose non-breaking alternative
+3. If non-breaking:
+   - Update spec/FunctionalSpec.md
+   - Update code
+   - Update/add tests
+   - Update CHANGELOG.md
+```
+
+### Scenario: Bug fix in calculation
+
+```
+1. Verify: Is this a spec deviation or spec error?
+2. If spec error: Fix spec first, then code
+3. If spec deviation: Fix code to match spec
+4. Add test: Prevent regression
+5. Document: Note in CHANGELOG.md if user-visible
+```
+
+### Scenario: New dependency needed
+
+```
+1. STOP: Dependencies affect Docker image size and security
+2. Check: Can existing dependencies solve this?
+3. If needed: Write ADR explaining why
+4. Wait: Get explicit approval before adding
+```
+
+## API Contract Awareness
+
+Remember: **External apps depend on this API**
+
+- ESP32 apps have **hard-coded field names** (firmware updates are expensive)
+- Home Assistant configs reference **specific endpoints and fields**
+- Mobile apps may be in app stores (can't force updates)
+
+**Before any API change, ask:**
+- Will this break existing consumers?
+- Can I make this non-breaking? (optional field, new enum value)
+- Do I need to update consumer documentation?
+
+## Files to Never Modify Manually
+
+These are auto-generated. Use the script instead:
+
+- `api/openapi.json` - Run `python scripts/export_api_spec.py`
+- `api/schemas/*.json` - Run `python scripts/export_api_spec.py`
+
+## Key Patterns in This Codebase
+
+- **Config**: `src/config.py` loads `config.yaml` + env vars
+- **Models**: `src/models.py` defines Pydantic response models
+- **API**: `src/app.py` defines FastAPI endpoints
+- **Business logic**: `src/board.py` for board service
+- **MBTA client**: `src/mbta_client.py` wraps upstream API
+- **Caching**: `src/cache.py` for TTL cache with stale mode
+- **Selection**: `src/selection.py` for arrival filtering/sorting
+
+## When Stuck
+
+1. Check if the answer is in `spec/` or `adr/`
+2. Check if similar logic exists in `src/` or `test/`
+3. Present options with pros/cons
+4. Ask for clarification - don't guess
+
+## Success Criteria
+
+A change is complete when:
+
+- [ ] Specs updated (if applicable)
+- [ ] Code implements spec accurately
+- [ ] Tests pass (`pytest`)
+- [ ] API contract regenerated (if API changed)
+- [ ] Documentation updated (CHANGELOG, examples)
+- [ ] No breaking changes introduced to v1
+- [ ] You can explain which spec section(s) were implemented
+
+## Remember
+
+This is an **API service** with **external consumers**. Every change must consider backward compatibility. When in doubt about API stability, ask before changing.

@@ -1,0 +1,25 @@
+{
+  "key": "route_73_outbound",
+  "label": "Route 73 - Harvard via Mount Auburn St",
+  "route_id": "73",
+  "stop_id": "place-harsq",
+  "direction_id": 1,
+  "walk_minutes": 5,
+  "status": "ok",
+  "arrival": {
+    "time": "2026-02-13T13:15:00-05:00",
+    "minutes": 12,
+    "leave_in_minutes": 7,
+    "source": "schedule",
+    "trip_id": null
+  },
+  "alternatives": [
+    {
+      "time": "2026-02-13T13:45:00-05:00",
+      "minutes": 42,
+      "leave_in_minutes": 37,
+      "source": "schedule",
+      "trip_id": null
+    }
+  ]
+}

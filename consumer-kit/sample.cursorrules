@@ -1,0 +1,67 @@
+# NextBus Consumer App - Cursor Rules
+#
+# Copy this file to your project root as .cursorrules
+# Replace the {{PLACEHOLDERS}} with your project details
+
+You are building a consumer app for the Bus Tracker API v1.
+
+## Project
+
+- **Name:** {{PROJECT_NAME}}
+- **Platform:** {{PLATFORM}}
+- **Description:** {{PROJECT_DESCRIPTION}}
+- **API Host:** {{API_HOST}} (e.g. 192.168.1.100:8080)
+- **Stop Key:** {{STOP_KEY}} (e.g. route_1_inbound)
+
+## API Contract
+
+The Bus Tracker API is stable at version 1. These will not change:
+
+**Endpoint:** `GET /v1/board/{key}`
+**Auth header:** `X-API-Key: <key>` (if enabled)
+
+**Response fields (stable, safe to hard-code):**
+
+```
+status                    string   "ok" | "stale" | "no_service" | "error"
+label                     string   Route display name
+arrival.leave_in_minutes  int      When to leave the house (can be negative)
+arrival.minutes           int      When bus arrives at stop (>= 0)
+arrival.time              string   ISO 8601 timestamp
+arrival.source            string   "realtime" | "schedule"
+alternatives              array    Next 0-2 buses (may be empty)
+```
+
+**When `status` is `no_service` or `error`, `arrival` is null.**
+
+New optional fields may be added over time. Ignore fields you don't recognize.
+
+## Required Behaviors
+
+1. Handle all four status values:
+   - `ok` → show arrival data
+   - `stale` → show arrival data with a stale indicator
+   - `no_service` → show "no buses" message
+   - `error` → show error state
+
+2. Ignore unknown JSON fields (forward compatibility)
+
+3. Retry on network errors with backoff (1s, 2s, 4s, 8s)
+
+4. Poll every 20-30 seconds (API caches for 20s; faster polling won't help)
+
+5. Never log or commit API keys
+
+## Development Approach
+
+**Phase 1 - Offline:** Parse the example JSON files in `consumer-kit/examples/` to build and test your display/UI without needing the live API.
+
+**Phase 2 - Online:** Connect to the real API. Add error handling and retry logic.
+
+**Phase 3 - Polish:** Optimize for your platform. Test edge cases (negative leave_in_minutes, empty alternatives). Run for 24+ hours.
+
+## Reference
+
+- `consumer-kit/README.md` has the full API documentation
+- `consumer-kit/examples/` has example responses for all statuses
+- The API serves interactive docs at `http://{{API_HOST}}/docs` when running

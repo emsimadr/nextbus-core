@@ -1,0 +1,378 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bus Tracker API",
+    "description": "A realtime bus arrival tracking API that tells you when to leave your house to catch the next bus.\n\n## Features\n\n- **Realtime-first**: MBTA predictions with schedule fallback\n- **Walk-time aware**: Computes when you need to leave, not just when the bus arrives\n- **Resilient**: Serves stale cached data when MBTA is unreachable\n- **Simple**: One request, small JSON response, easy to parse\n\n## Stability\n\nThis is API version v1. All fields and endpoints are stable. See API-CONTRACT.md for versioning policy.\n\n## Authentication\n\nOptional API key via `X-API-Key` header. The `/health` endpoint is always unauthenticated.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health check",
+        "description": "Health check endpoint for monitoring and Docker health checks.\n\nAlways returns HTTP 200 with a simple JSON response.\nNo authentication required.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/board": {
+      "get": {
+        "tags": [
+          "board"
+        ],
+        "summary": "Get all stops",
+        "description": "Return all configured stops with their next arrivals.\n\nReturns a list of all stops defined in `config.yaml`, each with:\n- Next arrival time and walk-time-aware leave time\n- Up to 2 alternative arrivals\n- Status indicator (ok, stale, no_service, error)\n\nThis endpoint is useful for Home Assistant or dashboards showing multiple routes.\nFor single-stop displays (ESP32, etc.), use `/v1/board/{key}` instead.",
+        "operationId": "get_board_v1_board_get",
+        "responses": {
+          "200": {
+            "description": "All configured stops with their next arrivals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/v1/board/{key}": {
+      "get": {
+        "tags": [
+          "board"
+        ],
+        "summary": "Get single stop",
+        "description": "Return a single configured stop by its config key.\n\nThe `key` must match one of the stop keys defined in `config.yaml`.\n\nReturns:\n- Next arrival with walk-time-aware leave time\n- Up to 2 alternative arrivals\n- Status indicator (ok, stale, no_service, error)\n\nThis endpoint is recommended for:\n- ESP32 e-ink displays (single stop view)\n- Dedicated per-route dashboards\n- Any client that only cares about one specific route/stop\n\nExample keys: `route_1_inbound`, `route_73_outbound`",
+        "operationId": "get_board_item_v1_board__key__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stop found with arrival data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Stop key not found in configuration",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Board item 'unknown_key' not found"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Arrival": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time",
+            "description": "When the bus arrives at the stop (ISO 8601)"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Minutes",
+            "description": "Minutes until bus arrives at stop"
+          },
+          "leave_in_minutes": {
+            "type": "integer",
+            "title": "Leave In Minutes",
+            "description": "Minutes until you must leave the house (minutes - walk_minutes); can be negative"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ArrivalSource",
+            "description": "Whether this is realtime or schedule data"
+          },
+          "trip_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trip Id",
+            "description": "MBTA trip ID for debugging"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "minutes",
+          "leave_in_minutes",
+          "source"
+        ],
+        "title": "Arrival",
+        "description": "A single upcoming bus arrival."
+      },
+      "ArrivalSource": {
+        "type": "string",
+        "enum": [
+          "realtime",
+          "schedule"
+        ],
+        "title": "ArrivalSource"
+      },
+      "BoardItemResponse": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "route_id": {
+            "type": "string",
+            "title": "Route Id"
+          },
+          "stop_id": {
+            "type": "string",
+            "title": "Stop Id"
+          },
+          "direction_id": {
+            "type": "integer",
+            "title": "Direction Id"
+          },
+          "walk_minutes": {
+            "type": "integer",
+            "title": "Walk Minutes"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "arrival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Arrival"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/Arrival"
+            },
+            "type": "array",
+            "title": "Alternatives"
+          },
+          "stale_as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale As Of"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "route_id",
+          "stop_id",
+          "direction_id",
+          "walk_minutes",
+          "status"
+        ],
+        "title": "BoardItemResponse",
+        "description": "One configured stop with its next arrival."
+      },
+      "BoardResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BoardItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "items"
+        ],
+        "title": "BoardResponse",
+        "description": "Top-level response for GET /v1/board."
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "mbta_unreachable",
+          "mbta_rate_limited",
+          "unknown"
+        ],
+        "title": "ErrorCode"
+      },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "description": "Error information when status is 'error'."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Status": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "no_service",
+          "stale",
+          "error"
+        ],
+        "title": "Status"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "board",
+      "description": "Bus arrival data for configured stops"
+    },
+    {
+      "name": "health",
+      "description": "Service health check"
+    }
+  ]
+}

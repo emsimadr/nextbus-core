@@ -70,7 +70,41 @@ async def lifespan(app: FastAPI):
     _config = None
 
 
-app = FastAPI(title="Bus Tracker", lifespan=lifespan)
+app = FastAPI(
+    title="Bus Tracker API",
+    version="1.0.0",
+    description="""
+A realtime bus arrival tracking API that tells you when to leave your house to catch the next bus.
+
+## Features
+
+- **Realtime-first**: MBTA predictions with schedule fallback
+- **Walk-time aware**: Computes when you need to leave, not just when the bus arrives
+- **Resilient**: Serves stale cached data when MBTA is unreachable
+- **Simple**: One request, small JSON response, easy to parse
+
+## Stability
+
+This is API version v1. All fields and endpoints are stable. See API-CONTRACT.md for versioning policy.
+
+## Authentication
+
+Optional API key via `X-API-Key` header. The `/health` endpoint is always unauthenticated.
+    """.strip(),
+    lifespan=lifespan,
+    openapi_tags=[
+        {
+            "name": "board",
+            "description": "Bus arrival data for configured stops",
+        },
+        {
+            "name": "health",
+            "description": "Service health check",
+        },
+    ],
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -95,23 +129,86 @@ async def verify_api_key(
 # ---------------------------------------------------------------------------
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["health"],
+    summary="Health check",
+    response_description="Service is healthy",
+)
 async def health():
-    """Health check endpoint. Always returns 200, no auth."""
+    """
+    Health check endpoint for monitoring and Docker health checks.
+    
+    Always returns HTTP 200 with a simple JSON response.
+    No authentication required.
+    """
     return {"status": "healthy"}
 
 
-@app.get("/v1/board", response_model=BoardResponse, dependencies=[Depends(verify_api_key)])
+@app.get(
+    "/v1/board",
+    response_model=BoardResponse,
+    dependencies=[Depends(verify_api_key)],
+    tags=["board"],
+    summary="Get all stops",
+    response_description="All configured stops with their next arrivals",
+)
 async def get_board():
-    """Return all configured stops with their next arrivals."""
+    """
+    Return all configured stops with their next arrivals.
+    
+    Returns a list of all stops defined in `config.yaml`, each with:
+    - Next arrival time and walk-time-aware leave time
+    - Up to 2 alternative arrivals
+    - Status indicator (ok, stale, no_service, error)
+    
+    This endpoint is useful for Home Assistant or dashboards showing multiple routes.
+    For single-stop displays (ESP32, etc.), use `/v1/board/{key}` instead.
+    """
     if _board_service is None:
         raise HTTPException(status_code=503, detail="Service not ready")
     return await _board_service.get_board()
 
 
-@app.get("/v1/board/{key}", response_model=BoardItemResponse, dependencies=[Depends(verify_api_key)])
+@app.get(
+    "/v1/board/{key}",
+    response_model=BoardItemResponse,
+    dependencies=[Depends(verify_api_key)],
+    tags=["board"],
+    summary="Get single stop",
+    response_description="One stop with its next arrival",
+    responses={
+        200: {
+            "description": "Stop found with arrival data",
+        },
+        404: {
+            "description": "Stop key not found in configuration",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Board item 'unknown_key' not found"}
+                }
+            },
+        },
+    },
+)
 async def get_board_item(key: str):
-    """Return a single configured stop by its config key."""
+    """
+    Return a single configured stop by its config key.
+    
+    The `key` must match one of the stop keys defined in `config.yaml`.
+    
+    Returns:
+    - Next arrival with walk-time-aware leave time
+    - Up to 2 alternative arrivals
+    - Status indicator (ok, stale, no_service, error)
+    
+    This endpoint is recommended for:
+    - ESP32 e-ink displays (single stop view)
+    - Dedicated per-route dashboards
+    - Any client that only cares about one specific route/stop
+    
+    Example keys: `route_1_inbound`, `route_73_outbound`
+    """
     if _board_service is None:
         raise HTTPException(status_code=503, detail="Service not ready")
     item = await _board_service.get_board_item(key)

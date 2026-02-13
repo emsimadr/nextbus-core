@@ -1,0 +1,29 @@
+{
+  "$defs": {
+    "ErrorCode": {
+      "enum": [
+        "mbta_unreachable",
+        "mbta_rate_limited",
+        "unknown"
+      ],
+      "title": "ErrorCode",
+      "type": "string"
+    }
+  },
+  "description": "Error information when status is 'error'.",
+  "properties": {
+    "code": {
+      "$ref": "#/$defs/ErrorCode"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message"
+  ],
+  "title": "ErrorDetail",
+  "type": "object"
+}

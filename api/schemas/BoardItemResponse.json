@@ -1,0 +1,179 @@
+{
+  "$defs": {
+    "Arrival": {
+      "description": "A single upcoming bus arrival.",
+      "properties": {
+        "time": {
+          "description": "When the bus arrives at the stop (ISO 8601)",
+          "format": "date-time",
+          "title": "Time",
+          "type": "string"
+        },
+        "minutes": {
+          "description": "Minutes until bus arrives at stop",
+          "minimum": 0,
+          "title": "Minutes",
+          "type": "integer"
+        },
+        "leave_in_minutes": {
+          "description": "Minutes until you must leave the house (minutes - walk_minutes); can be negative",
+          "title": "Leave In Minutes",
+          "type": "integer"
+        },
+        "source": {
+          "$ref": "#/$defs/ArrivalSource",
+          "description": "Whether this is realtime or schedule data"
+        },
+        "trip_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "MBTA trip ID for debugging",
+          "title": "Trip Id"
+        }
+      },
+      "required": [
+        "time",
+        "minutes",
+        "leave_in_minutes",
+        "source"
+      ],
+      "title": "Arrival",
+      "type": "object"
+    },
+    "ArrivalSource": {
+      "enum": [
+        "realtime",
+        "schedule"
+      ],
+      "title": "ArrivalSource",
+      "type": "string"
+    },
+    "ErrorCode": {
+      "enum": [
+        "mbta_unreachable",
+        "mbta_rate_limited",
+        "unknown"
+      ],
+      "title": "ErrorCode",
+      "type": "string"
+    },
+    "ErrorDetail": {
+      "description": "Error information when status is 'error'.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorDetail",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "ok",
+        "no_service",
+        "stale",
+        "error"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "description": "One configured stop with its next arrival.",
+  "properties": {
+    "key": {
+      "title": "Key",
+      "type": "string"
+    },
+    "label": {
+      "title": "Label",
+      "type": "string"
+    },
+    "route_id": {
+      "title": "Route Id",
+      "type": "string"
+    },
+    "stop_id": {
+      "title": "Stop Id",
+      "type": "string"
+    },
+    "direction_id": {
+      "title": "Direction Id",
+      "type": "integer"
+    },
+    "walk_minutes": {
+      "title": "Walk Minutes",
+      "type": "integer"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "arrival": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Arrival"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "alternatives": {
+      "items": {
+        "$ref": "#/$defs/Arrival"
+      },
+      "title": "Alternatives",
+      "type": "array"
+    },
+    "stale_as_of": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stale As Of"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ErrorDetail"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "key",
+    "label",
+    "route_id",
+    "stop_id",
+    "direction_id",
+    "walk_minutes",
+    "status"
+  ],
+  "title": "BoardItemResponse",
+  "type": "object"
+}

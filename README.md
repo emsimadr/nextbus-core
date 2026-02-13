@@ -1,15 +1,26 @@
 
-# Bus Tracker
+# Bus Tracker API
 
-A small API service that tells you when to leave your house to catch the next bus.
-Wraps the MBTA v3 API with caching, fallback logic, and walk-time awareness.
+A realtime bus arrival tracking API that tells you when to leave your house to catch the next bus.
 
-## Consumers
+Designed for **separate consumer applications** in their own repos (ESP32, Home Assistant, mobile apps, etc.) with strong API stability guarantees.
 
-- **Home Assistant** -- REST sensor for dashboards and automations
-- **ESP32 e-ink display** -- dedicated mini screen in a 3D-printed case
-- **TRMNL dashboard** -- future plugin for the TRMNL e-ink display
-- **Browser / any HTTP client**
+## For Client Developers
+
+Building an app that consumes this API? Copy the **[consumer-kit/](consumer-kit/)** folder to your project. It contains everything you need:
+
+- **`README.md`** - Full API documentation
+- **`sample.cursorrules`** - Copy to your project as `.cursorrules`
+- **`examples/`** - Response examples for offline testing
+
+## Consumer Applications
+
+These apps live in **separate repositories**:
+
+- **ESP32 e-ink display** - Dedicated mini screen
+- **Home Assistant** - REST sensor (see spec/HomeAssistant.md)
+- **TRMNL plugin** - Future e-ink dashboard tile
+- **Community clients** - Your app here!
 
 ## Quick start
 
@@ -36,7 +47,9 @@ curl http://localhost:8080/v1/board
 | `GET /v1/board/{key}` | Single stop by config key        |
 | `GET /health`         | Health check                     |
 
-See `spec/Service-API.md` for the full contract.
+See **[api/CONTRACT.md](api/CONTRACT.md)** for versioning policy and stability guarantees.
+
+Interactive API docs (when running): [http://localhost:8080/docs](http://localhost:8080/docs)
 
 ## Configuration
 
@@ -64,12 +77,23 @@ pytest -m smoke
 ## Project structure
 
 ```
-spec/          Product and functional specs (source of truth)
-adr/           Architecture decision records
-plan/          Iteration plans and backlog
-src/           Application source code
-test/          Tests and fixtures
-prompts/       Agent guardrails for Cursor
+api/                API contract artifacts
+├── CONTRACT.md        Versioning policy and stability guarantees
+├── openapi.json       OpenAPI 3.0 specification (auto-generated)
+├── schemas/           JSON schemas for validation (auto-generated)
+└── examples/          Example responses
+
+consumer-kit/       Self-contained package for consumer app developers
+├── README.md          Full API documentation
+├── sample.cursorrules Cursor rules template for consumer projects
+└── examples/          Response examples for offline testing
+
+spec/               Product and functional specs (source of truth)
+adr/                Architecture decision records
+plan/               Iteration plans and backlog
+src/                Application source code
+test/               Tests and fixtures
+scripts/            Utility scripts (API spec export, etc.)
 ```
 
 ## Specs

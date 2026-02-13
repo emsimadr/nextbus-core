@@ -1,0 +1,11 @@
+{
+  "key": "route_1_inbound",
+  "label": "Route 1 - Harvard Sq",
+  "route_id": "1",
+  "stop_id": "place-harsq",
+  "direction_id": 0,
+  "walk_minutes": 4,
+  "status": "no_service",
+  "arrival": null,
+  "alternatives": []
+}
