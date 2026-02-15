@@ -97,11 +97,55 @@ Predictions and schedules may include `arrival_time`, `departure_time`, both, or
   - Check `schedule_relationship` field for explanation
 
 **Our Resolution Order:**
-1. Use `attributes.arrival_time` if present
-2. Fall back to `attributes.departure_time` if arrival is null
+1. Use `attributes.arrival_time` if present (primary)
+2. Fall back to `attributes.departure_time` if arrival is null (fallback)
 3. If both are null, discard the candidate
 
 The resolved timestamp is returned as `time` in the API response. Clients never see the arrival/departure distinction -- the service handles it internally.
+
+### Why We Prefer arrival_time
+
+**The 30-60 Second Difference:**
+
+At a normal stop:
+```
+12:05:30  arrival_time   ← Bus arrives, doors open
+   |
+   | [Passengers exit and enter]
+   | [Typically 30-60 seconds]
+   |
+12:06:00  departure_time ← Doors close, bus leaves
+```
+
+**User Experience Impact:**
+
+Using `departure_time` would be **risky**:
+- User with 4-minute walk time would leave at 12:02:00
+- User arrives at stop at 12:06:00 (exact departure time)
+- **Risk:** Doors closing as user arrives, might miss bus
+
+Using `arrival_time` is **safe**:
+- User leaves at 12:01:30 (4 minutes before arrival)
+- User arrives at stop at 12:05:30 (as bus arrives)
+- **Benefit:** 30-60 second buffer to board comfortably
+
+**Design Philosophy:**
+- Conservative by design - better to arrive early than miss the bus
+- Accessibility-friendly - users needing extra boarding time are covered
+- Matches user mental model - "when will the bus **get there**?"
+
+**Fallback Handling:**
+
+The fallback to `departure_time` ensures correct behavior at edge cases:
+
+| Stop Type | Fields Available | What We Use | Result |
+|-----------|------------------|-------------|--------|
+| **Normal stop** | Both present | `arrival_time` | ✅ Safe boarding buffer |
+| **Origin (first stop)** | Only `departure_time` | `departure_time` | ✅ Shows when bus is sitting there |
+| **Terminus (last stop)** | Only `arrival_time` | `arrival_time` | ✅ Shows when bus arrives |
+| **Skipped stop** | Both null | Discarded | ✅ Correctly filtered out |
+
+This 2-line fallback (`arrival_time or departure_time`) handles all MBTA stop types correctly without complex conditional logic.
 
 ## Fields consumed
 

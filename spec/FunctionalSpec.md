@@ -51,6 +51,42 @@ Given a list of candidate arrivals (from predictions or schedules):
 5. The first is `arrival` (the next bus).
 6. The next 2 (if they exist) are `alternatives`.
 
+### Timestamp Resolution: arrival_time vs departure_time
+
+**Difference:**
+- `arrival_time`: When the bus **arrives** at the stop (doors open, riders can exit)
+- `departure_time`: When the bus **leaves** the stop (doors close, bus departs)
+- Typical gap: 30 seconds to 1 minute
+
+**Why we prefer `arrival_time`:**
+
+1. **User safety** - Gives users a buffer to board the bus
+   - Using arrival: User arrives as doors open, has time to board
+   - Using departure: User might arrive as doors close, risk missing bus
+
+2. **Conservative timing** - Better to arrive early than miss the bus
+
+3. **Accessibility** - Users with mobility needs have adequate boarding time
+
+4. **Matches mental model** - Users think "when will the bus get there?" not "when will it leave?"
+
+**When each field is present (per MBTA rules):**
+
+| Stop Type | `arrival_time` | `departure_time` | What We Use | Why |
+|-----------|----------------|------------------|-------------|-----|
+| Normal stop (middle of route) | ✅ Present | ✅ Present | `arrival_time` | Safer for boarding |
+| First stop (origin) | ❌ NULL | ✅ Present | `departure_time` | Bus starts here, no "arrival" |
+| Last stop (terminus) | ✅ Present | ❌ NULL | `arrival_time` | Bus ends here, no departure |
+| Skipped stop (express) | ❌ NULL | ❌ NULL | Discarded | Bus won't stop |
+
+**Fallback guarantees:**
+- At normal stops: Always uses `arrival_time` (30s-1min buffer for boarding)
+- At origin stops: Falls back to `departure_time` (when bus is sitting there)
+- At terminus stops: Uses `arrival_time` (bus arrives and stays)
+- If both null: Candidate is discarded (bus will not service this stop)
+
+**Implementation:** See `src/selection.py:resolve_timestamp()` for the 2-line fallback logic.
+
 ## Minutes computation
 
 - `minutes` = floor((arrival_time - as_of) in seconds / 60)

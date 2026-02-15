@@ -159,6 +159,49 @@ API cannot serve any data. Error codes: `mbta_unreachable`, `mbta_rate_limited`,
 
 ---
 
+## Understanding Arrival Times
+
+### What `arrival.time` Means
+
+The API returns **when the bus arrives at the stop** (doors open), not when it departs (doors close).
+
+```
+12:05:30 ← Bus arrives (arrival.time) - doors open, you can board
+   |
+   |  [~30-60 seconds]
+   |
+12:06:00 ← Bus departs - doors close, bus leaves
+```
+
+**Why this matters:**
+
+If the API said "12:06:00" (departure time), and you have a 4-minute walk:
+- You'd leave at 12:02:00
+- You'd arrive at 12:06:00 (exact departure time)
+- **Result:** Doors closing as you arrive, might miss the bus ❌
+
+With arrival time "12:05:30":
+- You leave at 12:01:30
+- You arrive at 12:05:30 (bus just arrived)
+- **Result:** 30 seconds to board comfortably ✅
+
+**The API is conservative by design** - it gives you time to board, not just barely make it.
+
+### Edge Cases
+
+The API handles these automatically:
+
+| Scenario | What You Get | Why |
+|----------|--------------|-----|
+| **Normal stop** | Arrival time (doors open) | Gives you boarding buffer |
+| **First stop (origin)** | Departure time (when bus is there) | Bus doesn't "arrive", it starts there |
+| **Last stop (terminus)** | Arrival time | Bus arrives and stays |
+| **Bus skipping stop** | Not included in results | Filtered out automatically |
+
+**You don't need to handle these cases** - the API does it for you.
+
+---
+
 ## Authentication
 
 If the API has `API_KEY` configured, include:
