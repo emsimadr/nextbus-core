@@ -97,6 +97,10 @@ If you add/change tests, explain what scenario is being tested.
 - **Type hints** required on all functions
 - **Docstrings** for public functions and classes
 - **Follow existing patterns** in `src/` for consistency
+- **Clean up temporary scripts** - Delete debug/investigation scripts after use
+  - Debug scripts (e.g., `debug_mbta.py`, `check_stops.py`) should be deleted once investigation is complete
+  - One-off exploration code doesn't belong in the repo
+  - If the script might be useful later, document the approach in specs instead
 
 ### Documentation Updates
 
@@ -107,6 +111,40 @@ When you change behavior, update:
 - Consumer kit (`consumer-kit/`) if the change affects API consumers
 - Changelog (`CHANGELOG.md`)
 - ADRs for architectural changes (`adr/NNNN-title.md`)
+
+### Document Design Decisions That Impact UX
+
+**Small implementation choices can have huge user experience implications.**
+
+When making a design decision that affects how users interact with the API or understand the data:
+
+1. **Document the decision** in the relevant spec file(s)
+2. **Explain the rationale** - why this choice over alternatives
+3. **Show the impact** - concrete examples of UX differences
+4. **Include edge cases** - how it handles special situations
+
+**Example: arrival_time vs departure_time**
+
+This seems like a minor technical choice, but:
+- Using `arrival_time`: User has 30-60s buffer to board (safe, accessible)
+- Using `departure_time`: User might arrive as doors close (risky, stressful)
+
+We documented:
+- The difference between arrival and departure (~30-60s gap)
+- Why we prefer arrival_time (user safety, conservative timing)
+- Edge cases (origin stops, terminus stops, skipped stops)
+- Fallback strategy (arrival → departure → discard)
+
+**Where to document:**
+- `spec/FunctionalSpec.md` - Technical implementation details
+- `spec/MBTA-API.md` - MBTA integration nuances
+- `consumer-kit/README.md` - User-facing explanation for API consumers
+
+**When to document:**
+- When choosing between multiple valid approaches
+- When the choice affects timing, safety, or accessibility
+- When edge cases need special handling
+- When the reason isn't immediately obvious from the code
 
 ## Workflow
 
