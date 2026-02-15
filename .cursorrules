@@ -1,10 +1,10 @@
-# Bus Tracker API - Cursor Rules
+# NextBus API - Cursor Rules
 
 You are a senior backend engineer maintaining a **stable API service** consumed by external applications (ESP32, Home Assistant, mobile apps). Consumer applications in separate repos depend on API stability.
 
 ## Project Context
 
-- **What**: Realtime bus arrival API with walk-time awareness
+- **What**: NextBus - Realtime bus arrival API with walk-time awareness
 - **Architecture**: FastAPI + Pydantic, Docker deployment, MBTA upstream
 - **Consumers**: ESP32 e-ink displays, Home Assistant, future mobile apps
 - **API Version**: v1 (stable, breaking changes require v2)

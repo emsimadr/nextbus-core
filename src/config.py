@@ -1,5 +1,5 @@
 """
-Configuration loading for bus-tracker.
+Configuration loading for NextBus.
 
 Loads non-secret settings from config.yaml, secrets from environment variables.
 """

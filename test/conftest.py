@@ -1,10 +1,10 @@
 """
-Shared test fixtures for bus-tracker.
+Shared test fixtures for NextBus.
 
 Provides:
 - MBTA fixture data loaders
 - Fake MBTA server for E2E tests
-- Bus-tracker server for E2E tests
+- NextBus server for E2E tests
 - Temporary config files
 """
 
@@ -85,7 +85,7 @@ stops:
 @pytest.fixture()
 def bus_tracker_url(config_file):
     """
-    Start the actual bus-tracker FastAPI app on a random port.
+    Start the actual NextBus FastAPI app on a random port.
     Yields the base URL (e.g. http://127.0.0.1:9123).
     Shuts down after the test.
     """
@@ -123,7 +123,7 @@ def bus_tracker_url(config_file):
         except httpx.ConnectError:
             time.sleep(0.1)
     else:
-        pytest.fail("Bus tracker server did not start in time")
+        pytest.fail("NextBus server did not start in time")
 
     yield base_url
 

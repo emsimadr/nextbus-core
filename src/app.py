@@ -1,5 +1,5 @@
 """
-FastAPI application for bus-tracker.
+FastAPI application for NextBus.
 
 Lifespan manages httpx client, cache, and board service.
 Routes: /v1/board, /v1/board/{key}, /health.
@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Bus Tracker API",
+    title="NextBus API",
     version="1.0.0",
     description="""
 A realtime bus arrival tracking API that tells you when to leave your house to catch the next bus.

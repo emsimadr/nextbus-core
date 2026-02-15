@@ -1,4 +1,5 @@
 # Bus Tracker configuration
+# NextBus configuration
 # Copy this file to config.yaml and edit for your stops.
 #
 # SECRETS (API keys) go in .env, NOT here. See .env.example.

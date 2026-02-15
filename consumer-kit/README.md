@@ -1,6 +1,6 @@
 # Consumer Kit
 
-Everything you need to build an app that uses the Bus Tracker API.
+Everything you need to build an app that uses the NextBus API.
 
 ## What's in This Folder
 
@@ -27,7 +27,7 @@ consumer-kit/
 
 ## What the API Does
 
-The Bus Tracker API wraps the MBTA transit API and returns:
+The NextBus API wraps the MBTA transit API and returns:
 
 - **When to leave your house** (`leave_in_minutes`) accounting for walk time
 - **When the bus arrives** (`minutes`)

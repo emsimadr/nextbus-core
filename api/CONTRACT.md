@@ -1,6 +1,6 @@
 # API Contract & Versioning Policy
 
-This document defines the stability guarantees and versioning policy for the Bus Tracker API. Consumer applications can rely on these rules when integrating with the service.
+This document defines the stability guarantees and versioning policy for the NextBus API. Consumer applications can rely on these rules when integrating with the service.
 
 ## Version: v1
 
